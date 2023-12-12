@@ -14,32 +14,31 @@
  * Purpose:	The public header file for the pass-through VOL connector.
  */
 
-#ifndef H5VLcompress_vol_H
-#define H5VLcompress_vol_H
+#ifndef H5VLpfs_vol_H
+#define H5VLpfs_vol_H
 
 /* Public headers needed by this file */
+#include <H5PLpublic.h>
 #include "H5VLpublic.h" /* Virtual Object Layer                 */
 
 /* Identifier for the pass-through VOL connector */
-#define H5VL_REPLICATE_VOL (H5VL_replicate_vol_register())
+#define H5VL_PFS_VOL (H5VL_pfs_vol_register())
 
 /* Characteristics of the pass-through VOL connector */
-#define H5VL_COMPRESS_VOL_NAME    "compress_vol"
-#define H5VL_COMPRESS_VOL_VALUE   4 /* VOL connector ID */
-#define H5VL_COMPRESS_VOL_VERSION 0
+#define H5VL_PFS_VOL_NAME    "pfs_vol"
+#define H5VL_PFS_VOL_VALUE   6 /* VOL connector ID */
+#define H5VL_PFS_VOL_VERSION 0
 
 /* Pass-through VOL connector info */
-typedef struct H5VL_compress_vol_t {
-  int compress_method_;     /* Compression method */
-  hid_t next_vol_id_;       /* VOL ID for under VOL */
-  void *next_vol_info_;     /* VOL info for under VOL */
-} H5VL_compress_vol_t;
+typedef struct H5VL_pfs_vol_t {
+  std::string path_;
+} H5VL_pfs_vol_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-H5_DLL hid_t H5VL_replicate_vol_register(void);
+H5_DLL hid_t H5VL_pfs_vol_register(void);
 H5_DLL const void* H5PLget_plugin_info(void);
 H5_DLL H5PL_type_t H5PLget_plugin_type(void);
 
@@ -47,4 +46,4 @@ H5_DLL H5PL_type_t H5PLget_plugin_type(void);
 }
 #endif
 
-#endif /* H5VLcompress_vol_H */
+#endif /* H5VLpfs_vol_H */

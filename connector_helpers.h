@@ -35,26 +35,35 @@ class ParseConn {
     return tree_.front();
   }
 
-  void pop() {
-    if (tree_.size()) {
-      tree_.erase(tree_.begin());
+  std::string GetNextVolName() {
+    if (tree_.size() >= 2) {
+      return tree_[1][0];
     }
-    if (tree_.size()) {
-      tree_.front().erase(tree_.front().begin());
-    }
+    return "";
   }
 
-  std::string serialize() {
+  std::string GetNextVolParams() {
     std::stringstream ss;
-    for (std::vector<std::string> &list : tree_) {
-      for (std::string &str : list) {
-        ss << str << ":";
+    if (tree_[1].size() >= 2) {
+      ss << tree_[1][1] << ";";
+    }
+    for (size_t i = 2; i < tree_.size(); ++i) {
+      for (std::string &name_param : tree_[i]) {
+        ss << name_param << ":";
       }
       ss << ";";
     }
     return ss.str();
   }
 };
+
+inline void compress(void *input, size_t size, void **output) {
+  (void) input; (void) size; (void) output;
+}
+
+inline void decompress(void *input, size_t size, void **output) {
+  (void) input; (void) size; (void) output;
+}
 
 }
 

@@ -129,9 +129,9 @@ endif()
 #-----------------------------------------------------------------------------
 # Build Main Packages
 #-----------------------------------------------------------------------------
-add_library(hermes_passthru SHARED H5VLhermes_passthru.cc)
+add_library(replicate_vol SHARED H5VLreplicate_vol.cc)
 include_directories(${HDF5_HERMES_VFD_EXT_INCLUDE_DEPENDENCIES})
-target_link_libraries(hermes_passthru
+target_link_libraries(replicate_vol
         MPI::MPI_CXX
         ${HDF5_HERMES_VFD_EXT_LIB_DEPENDENCIES})
 message("${HDF5_HERMES_VFD_EXT_INCLUDE_DEPENDENCIES} ${HDF5_HERMES_VFD_EXT_LIB_DEPENDENCIES} ${HDF5_DEFINITIONS}")
@@ -139,6 +139,13 @@ message("${HDF5_HERMES_VFD_EXT_INCLUDE_DEPENDENCIES} ${HDF5_HERMES_VFD_EXT_LIB_D
 add_library(compress_vol SHARED H5VLcompress_vol.cc)
 include_directories(${HDF5_HERMES_VFD_EXT_INCLUDE_DEPENDENCIES})
 target_link_libraries(compress_vol
+        MPI::MPI_CXX
+        ${HDF5_HERMES_VFD_EXT_LIB_DEPENDENCIES})
+message("${HDF5_HERMES_VFD_EXT_INCLUDE_DEPENDENCIES} ${HDF5_HERMES_VFD_EXT_LIB_DEPENDENCIES} ${HDF5_DEFINITIONS}")
+
+add_library(pfs_vol SHARED H5VLpfs_vol.cc)
+include_directories(${HDF5_HERMES_VFD_EXT_INCLUDE_DEPENDENCIES})
+target_link_libraries(pfs_vol
         MPI::MPI_CXX
         ${HDF5_HERMES_VFD_EXT_LIB_DEPENDENCIES})
 message("${HDF5_HERMES_VFD_EXT_INCLUDE_DEPENDENCIES} ${HDF5_HERMES_VFD_EXT_LIB_DEPENDENCIES} ${HDF5_DEFINITIONS}")

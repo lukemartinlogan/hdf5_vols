@@ -376,11 +376,11 @@ H5PLget_plugin_info(void) {
 hid_t
 H5VL_compress_vol_register(void)
 {
-    /* Singleton register the pass-through VOL connector ID */
-    if (H5VL_COMPRESS_VOL_g < 0)
-      H5VL_COMPRESS_VOL_g = H5VLregister_connector(&H5VL_compress_vol_g, H5P_DEFAULT);
+  /* Singleton register the pass-through VOL connector ID */
+  if (H5VL_COMPRESS_VOL_g < 0)
+    H5VL_COMPRESS_VOL_g = H5VLregister_connector(&H5VL_compress_vol_g, H5P_DEFAULT);
 
-    return H5VL_COMPRESS_VOL_g;
+  return H5VL_COMPRESS_VOL_g;
 } /* end H5VL_compress_vol_register() */
 
 /*-------------------------------------------------------------------------
@@ -399,13 +399,13 @@ static herr_t
 H5VL_compress_vol_init(hid_t vipl_id)
 {
 #ifdef ENABLE_PASSTHRU_LOGGING
-    printf("------- PASS THROUGH VOL INIT\n");
+  printf("------- PASS THROUGH VOL INIT\n");
 #endif
 
-    /* Shut compiler up about unused parameter */
-    (void)vipl_id;
+  /* Shut compiler up about unused parameter */
+  (void)vipl_id;
 
-    return 0;
+  return 0;
 } /* end H5VL_compress_vol_init() */
 
 /*---------------------------------------------------------------------------
@@ -425,13 +425,13 @@ static herr_t
 H5VL_compress_vol_term(void)
 {
 #ifdef ENABLE_PASSTHRU_LOGGING
-    printf("------- PASS THROUGH VOL TERM\n");
+  printf("------- PASS THROUGH VOL TERM\n");
 #endif
 
-    /* Reset VOL ID */
+  /* Reset VOL ID */
   H5VL_COMPRESS_VOL_g = H5I_INVALID_HID;
 
-    return 0;
+  return 0;
 } /* end H5VL_compress_vol_term() */
 
 /*---------------------------------------------------------------------------
@@ -447,7 +447,7 @@ H5VL_compress_vol_term(void)
 static void *
 H5VL_compress_vol_info_copy(const void *_info)
 {
-  return 0;
+  return new H5VL_compress_vol_t(*(H5VL_compress_vol_t*)_info);
 } /* end H5VL_compress_vol_info_copy() */
 
 /*---------------------------------------------------------------------------
@@ -518,12 +518,13 @@ H5VL_compress_vol_str_to_info(const char *str, void **_info)
   H5VL_compress_vol_t *info = (H5VL_compress_vol_t*)malloc(sizeof(H5VL_compress_vol_t));
   h5::ParseConn parser;
   parser.parse(str);
-  std::vector<std::string> &params = parser.front();
-  std::string next_vol_name = params[0];
-  parser.pop();
-  std::string next_vol_params = parser.serialize();
+  std::string next_vol_name = parser.GetNextVolName();
+  std::string next_vol_params = parser.GetNextVolParams();
   info->next_vol_id_ = H5VLregister_connector_by_name(next_vol_name.c_str(), H5P_DEFAULT);
-  H5VLconnector_str_to_info(next_vol_params.c_str(), info->next_vol_id_, (void**)&info->next_vol_info_);
+  info->compress_method_ = 0;
+  if (next_vol_params.size()) {
+    H5VLconnector_str_to_info(next_vol_params.c_str(), info->next_vol_id_, (void **) &info->next_vol_info_);
+  }
 
   /* Set return value */
   *_info = info;
@@ -544,13 +545,13 @@ H5VL_compress_vol_str_to_info(const char *str, void **_info)
 static void *
 H5VL_compress_vol_get_object(const void *obj)
 {
-    const H5VL_compress_vol_t *o = (const H5VL_compress_vol_t *)obj;
+  const H5VL_compress_vol_t *o = (const H5VL_compress_vol_t *)obj;
 
 #ifdef ENABLE_PASSTHRU_LOGGING
-    printf("------- PASS THROUGH VOL Get object\n");
+  printf("------- PASS THROUGH VOL Get object\n");
 #endif
 
-    return H5VLget_object(o->next_vol_info_, o->next_vol_id_);
+  return H5VLget_object(o->next_vol_info_, o->next_vol_id_);
 } /* end H5VL_compress_vol_get_object() */
 
 /*---------------------------------------------------------------------------
@@ -767,7 +768,11 @@ H5VL_compress_vol_dataset_create(void *obj, const H5VL_loc_params_t *loc_params,
                                  hid_t lcpl_id, hid_t type_id, hid_t space_id, hid_t dcpl_id, hid_t dapl_id,
                                  hid_t dxpl_id, void **req)
 {
-  return 0;
+  H5VL_compress_vol_t *o = (H5VL_compress_vol_t *)obj;
+  H5VL_compress_vol_t *new_obj = new H5VL_compress_vol_t(*o);
+  new_obj->next_vol_info_ = H5VLdataset_create(o->next_vol_info_, loc_params, o->next_vol_id_, name, lcpl_id, type_id, space_id,
+                                               dcpl_id, dapl_id, dxpl_id, req);
+  return new_obj;
 } /* end H5VL_compress_vol_dataset_create() */
 
 /*-------------------------------------------------------------------------
@@ -801,7 +806,24 @@ static herr_t
 H5VL_compress_vol_dataset_read(size_t count, void *dset[], hid_t mem_type_id[], hid_t mem_space_id[],
                                hid_t file_space_id[], hid_t plist_id, void *buf[], void **req)
 {
-  return 0;
+  std::vector<H5VL_compress_vol_t*> obj(count);
+  size_t i;                /* Local index variable */
+  herr_t ret_value;
+
+  /* Allocate obj array if necessary */
+  for (i = 0; i < count; i++) {
+    /* Get the object */
+    obj[i] = (H5VL_compress_vol_t*)((H5VL_compress_vol_t*)dset[i])->next_vol_info_;
+
+    /* Make sure the class matches */
+    if (((H5VL_compress_vol_t*) dset[i])->next_vol_id_ != ((H5VL_compress_vol_t*) dset[0])->next_vol_id_)
+      return -1;
+  }
+
+  ret_value = H5VLdataset_read(count, (void**)obj.data(), ((H5VL_compress_vol_t*)dset[0])->next_vol_id_, mem_type_id,
+                               mem_space_id, file_space_id, plist_id, buf, req);
+
+  return ret_value;
 } /* end H5VL_compress_vol_dataset_read() */
 
 /*-------------------------------------------------------------------------
@@ -818,7 +840,24 @@ static herr_t
 H5VL_compress_vol_dataset_write(size_t count, void *dset[], hid_t mem_type_id[], hid_t mem_space_id[],
                                 hid_t file_space_id[], hid_t plist_id, const void *buf[], void **req)
 {
-  return 0;
+  std::vector<H5VL_compress_vol_t*> obj(count);
+  size_t i;                /* Local index variable */
+  herr_t ret_value;
+
+  /* Allocate obj array if necessary */
+  for (i = 0; i < count; i++) {
+    /* Get the object */
+    obj[i] = (H5VL_compress_vol_t*)((H5VL_compress_vol_t*)dset[i])->next_vol_info_;
+
+    /* Make sure the class matches */
+    if (((H5VL_compress_vol_t*) dset[i])->next_vol_id_ != ((H5VL_compress_vol_t*) dset[0])->next_vol_id_)
+      return -1;
+  }
+
+  ret_value = H5VLdataset_write(count, (void**)obj.data(), ((H5VL_compress_vol_t*)dset[0])->next_vol_id_, mem_type_id,
+                               mem_space_id, file_space_id, plist_id, buf, req);
+
+  return ret_value;
 } /* end H5VL_compress_vol_dataset_write() */
 
 /*-------------------------------------------------------------------------
@@ -998,7 +1037,14 @@ static void *
 H5VL_compress_vol_file_create(const char *name, unsigned flags, hid_t fcpl_id, hid_t fapl_id, hid_t dxpl_id,
                               void **req)
 {
-  return 0;
+  H5VL_compress_vol_t *file = new H5VL_compress_vol_t(), *info;
+  H5Pget_vol_info(fapl_id, (void **)&info);
+  (*file) = (*info);
+  hid_t under_fapl_id = H5Pcopy(fapl_id);
+  H5Pset_vol(under_fapl_id, info->next_vol_id_, info->next_vol_info_);
+  H5VLfile_create(name, flags, fcpl_id, under_fapl_id, dxpl_id, req);
+  H5Pclose(under_fapl_id);
+  return file;
 } /* end H5VL_compress_vol_file_create() */
 
 /*-------------------------------------------------------------------------
